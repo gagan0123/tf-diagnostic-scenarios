@@ -11,6 +11,10 @@ provider "google" {
   project = var.project_id
 }
 
+resource "random_id" "random" {
+  byte_length = 4
+}
+
 resource "google_project_service" "vpc_access_api" {
   project = var.project_id
   service = "vpcaccess.googleapis.com"
@@ -18,19 +22,19 @@ resource "google_project_service" "vpc_access_api" {
 }
 
 resource "google_compute_network" "test_vpc" {
-  name                    = "vpc-connector-test-network"
+  name                    = "test-vpc-connector-network-${random_id.random.hex}"
   auto_create_subnetworks = false
 }
 
 resource "google_compute_subnetwork" "test_subnet" {
-  name          = "vpc-connector-test-subnet"
+  name          = "test-vpc-connector-subnet-${random_id.random.hex}"
   ip_cidr_range = "10.8.0.0/28" # Required range for VPC connectors
   region        = var.region
   network       = google_compute_network.test_vpc.id
 }
 
 resource "google_vpc_access_connector" "test_connector" {
-  name    = "vpc-connector-test"
+  name    = "test-vpc-connector-${random_id.random.hex}"
   region  = var.region
   subnet {
     name = google_compute_subnetwork.test_subnet.name

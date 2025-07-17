@@ -64,19 +64,11 @@ load_or_create_config() {
             read -p "Enter your GCP Project ID: " PROJECT_ID
         fi
 
-        if [ -n "$REGION" ]; then
-            read -p "Auto-detected Region: ${REGION}. Use this? (y/n): " -n 1 -r
-            echo
-            if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-                read -p "Enter the default GCP Region (e.g., us-central1): " REGION
-                if [[ -z "$REGION" ]]; then
-                    REGION="us-central1"
-                fi
-            fi
-        else
+        if [ -z "$REGION" ]; then
             print_info "Could not determine Region from gcloud config."
-            read -p "Enter the default GCP Region (e.g., us-central1): " REGION
+            read -p "Enter the default GCP Region (e.g., us-central1) [us-central1]: " REGION
         fi
+        : "${REGION:=us-central1}"
 
         if [ -z "$PROJECT_ID" ] || [ -z "$REGION" ]; then
             print_error "Project ID and Region are required. Exiting."
@@ -111,10 +103,11 @@ get_scenario_vars() {
     case $scenario_num in
         2)
             if [ -z "$ZONE" ]; then
-                read -p "Enter the Zone for the GCE instance (e.g., us-central1-a): " ZONE
+                read -p "Enter the Zone for the GCE instance (e.g., ${REGION}-a) [${REGION}-a]: " ZONE
                 echo "ZONE=${ZONE}" >> .env
                 export ZONE
             fi
+            : "${ZONE:=${REGION}-a}"
             if [ -z "$DOMAIN_NAME" ]; then
                 read -p "Enter a domain name (e.g., example.com): " DOMAIN_NAME
                 echo "DOMAIN_NAME=${DOMAIN_NAME}" >> .env
@@ -123,10 +116,11 @@ get_scenario_vars() {
             ;;
         4)
             if [ -z "$ZONE" ]; then
-                read -p "Enter the Zone for the GCE instance (e.g., us-central1-a): " ZONE
+                read -p "Enter the Zone for the GCE instance (e.g., ${REGION}-a) [${REGION}-a]: " ZONE
                 echo "ZONE=${ZONE}" >> .env
                 export ZONE
             fi
+            : "${ZONE:=${REGION}-a}"
             ;;
     esac
 }
@@ -198,6 +192,8 @@ run_scenario() {
             2)
                 local ip=$(terraform output -raw load_balancer_ip)
                 print_success "External Load Balancer created. IP: ${ip}"
+                print_info "Note: SSL certificate provisioning can take up to an hour."
+                print_info "After it's provisioned, you should be able to access your domain via HTTPS."
                 ;;
             3)
                 local id=$(terraform output -raw connector_id)
